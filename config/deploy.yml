@@ -1,0 +1,52 @@
+service: solo-grabber
+image: bennyconn/solo-grabber
+
+servers:
+  web:
+    hosts:
+      - YOUR_HETZNER_IP   # replace with actual IP after provisioning
+
+registry:
+  username: bennyconn
+  password:
+    - KAMAL_REGISTRY_PASSWORD
+
+builder:
+  arch: amd64
+
+env:
+  clear:
+    ENVIRONMENT: production
+    SERVER_PORT: 4000
+    DB_PATH: /data/solo-grabber.db
+    JOBS_DIR: /data/jobs
+    PYTHON_BIN: python3
+    PYTHON_SCRIPT_PATH: /app/scripts/process_video.py
+    FINGERPRINT_PATH: /data/me_fingerprint.json
+    SMALLS_CRON_ENABLED: "true"
+  secret:
+    - API_KEY
+    - R2_ACCOUNT_ID
+    - R2_ACCESS_KEY_ID
+    - R2_SECRET_ACCESS_KEY
+    - R2_BUCKET
+    - R2_PUBLIC_BASE_URL
+
+# Persist the SQLite database and job output across deploys
+volumes:
+  - /data/solo-grabber:/data
+
+proxy:
+  app_port: 4000
+  ssl: true
+  host: YOUR_DOMAIN   # e.g. grabber.yourdomain.com
+  healthcheck:
+    path: /health
+    interval: 5
+    timeout: 5
+
+logging:
+  driver: json-file
+  options:
+    max-size: "100m"
+    max-file: "3"

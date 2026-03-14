@@ -4,6 +4,7 @@ import (
 	"log"
 
 	"github.com/benny-conn/solo-grabber/internal/api"
+	sgcron "github.com/benny-conn/solo-grabber/internal/cron"
 	"github.com/benny-conn/solo-grabber/internal/store"
 	"github.com/benny-conn/solo-grabber/internal/utils"
 	"github.com/gin-gonic/gin"
@@ -23,6 +24,11 @@ func main() {
 	handler := api.NewHandler(db)
 	router := gin.Default()
 	api.SetupRoutes(router, handler)
+
+	if viper.GetBool("SMALLS_CRON_ENABLED") {
+		c := sgcron.Start(db) //nolint:ineffassign
+		defer c.Stop()
+	}
 
 	addr := utils.ServerAddr()
 	log.Printf("solo-grabber API listening on %s", addr)

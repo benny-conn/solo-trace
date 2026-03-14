@@ -1,6 +1,10 @@
+# Python
 .venv
-output
 __pycache__
+output/
+models/
+
+# Audio/video files
 *.jpg
 *.png
 *.jpeg
@@ -13,7 +17,28 @@ __pycache__
 *.ogg
 *.webm
 *.mov
-*.db*
+*_stems/
 
+# Database
+*.db
+*.db-shm
+*.db-wal
+
+# Job output & scraper state
+jobs/
+scripts/jam_history.json
+
+# Env & secrets
+.env
+*.crt
+
+# Deployment
+.kamal/
+
+# Go binary
+solo-grabber
+
+# macOS
+.DS_Store
 
 SPEC.md

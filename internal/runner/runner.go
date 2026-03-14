@@ -131,6 +131,12 @@ func buildArgs(videoURL, referencePhotoPath, personID, jobDir string) []string {
 		args = append(args, "--skip-upload")
 	}
 
+	// Use audio fingerprint if one has been built for this person
+	fingerprintPath := viper.GetString("FINGERPRINT_PATH")
+	if fingerprintPath != "" {
+		args = append(args, "--fingerprint", fingerprintPath)
+	}
+
 	return args
 }
 

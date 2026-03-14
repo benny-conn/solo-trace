@@ -21,6 +21,8 @@ RUN cd scripts && pip install --break-system-packages -r requirements.txt
 # Copy schema for migrations
 COPY sql/ ./sql/
 
+COPY /scripts/me_fingerprint.json /data/me_fingerprint.json
+
 ENV ENVIRONMENT=production
 ENV SERVER_PORT=4000
 EXPOSE 4000
