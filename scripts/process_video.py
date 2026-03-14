@@ -9,6 +9,7 @@ Usage:
     --reference-photo "./me.jpg" \\
     --person-id "ben_conn" \\
     --output-dir "./output" \\
+    [--fingerprint ./me_fingerprint.json] \\
     [--instrument saxophone] \\
     [--sample-rate 1.0] \\
     [--similarity-threshold 0.45] \\
@@ -33,7 +34,7 @@ from datetime import datetime, timezone
 from pathlib import Path
 
 from clip_extractor import extract_clips, get_video_duration
-from face_detector import detect_segments
+from face_detector import detect_segments, Segment
 from audio_analyzer import analyze_clip
 
 logging.basicConfig(
@@ -142,18 +143,51 @@ def process(args: argparse.Namespace) -> dict:
         _save_result(result, out_dir)
         return result
 
-    logger.info(f"Found {len(segments)} appearance segment(s).")
+    logger.info(f"Found {len(segments)} visual segment(s).")
 
-    # ── 3. Clip extraction ────────────────────────────────────────────────────
+    # ── 3. Audio fingerprinting (hybrid merge) ────────────────────────────────
+    final_segments = segments  # default: visual only
+
+    if args.fingerprint and Path(args.fingerprint).exists():
+        logger.info(f"Running audio fingerprinting with: {args.fingerprint}")
+        try:
+            from audio_fingerprinter import detect_playing_segments, merge_visual_and_audio
+            import shutil, subprocess
+
+            # Extract full video audio for fingerprinting scan
+            full_audio_path = str(out_dir / "full_audio.wav")
+            subprocess.run([
+                shutil.which("ffmpeg") or "ffmpeg", "-y",
+                "-i", video_path,
+                "-ac", "1", "-ar", "22050", "-vn",
+                full_audio_path,
+            ], check=True, capture_output=True)
+
+            audio_segs = detect_playing_segments(
+                audio_path=full_audio_path,
+                fingerprint_path=args.fingerprint,
+            )
+            logger.info(f"Audio fingerprinting found {len(audio_segs)} segment(s).")
+
+            merged = merge_visual_and_audio(segments, audio_segs)
+            final_segments = [Segment(start=s["start"], end=s["end"], detection_type=s.get("detection_type", "both")) for s in merged]
+            logger.info(f"After hybrid merge: {len(final_segments)} segment(s).")
+
+        except Exception as e:
+            logger.warning(f"Audio fingerprinting failed, falling back to visual only: {e}")
+    elif args.fingerprint:
+        logger.warning(f"Fingerprint file not found: {args.fingerprint} — skipping audio fingerprinting")
+
+    # ── 4. Clip extraction ────────────────────────────────────────────────────
     clips = extract_clips(
         video_path=video_path,
-        segments=segments,
+        segments=final_segments,
         output_dir=str(clips_dir),
         padding=args.padding,
         video_duration=video_duration,
     )
 
-    # ── 4. Audio analysis ─────────────────────────────────────────────────────
+    # ── 5. Audio analysis ─────────────────────────────────────────────────────
     for clip in clips:
         if not args.skip_audio_analysis:
             analysis_dir = str(clips_dir / f"analysis_{clip['clip_index']:03d}")
@@ -170,7 +204,7 @@ def process(args: argparse.Namespace) -> dict:
         else:
             clip["analysis"] = {}
 
-    # ── 5. Upload to R2 ───────────────────────────────────────────────────────
+    # ── 6. Upload to R2 ───────────────────────────────────────────────────────
     if not args.skip_upload:
         from uploader import upload_clip
         for clip in clips:
@@ -216,6 +250,9 @@ def main() -> None:
                         help="Skip R2 upload (useful for local testing)")
     parser.add_argument("--no-demucs", action="store_true",
                         help="Skip Demucs source separation (faster, less accurate transcription)")
+    parser.add_argument("--fingerprint", default=None,
+                        help="Path to timbral fingerprint JSON (from build_fingerprint.py). "
+                             "Enables hybrid face+audio detection.")
 
     args = parser.parse_args()
 

@@ -29,40 +29,45 @@ _NOTE_NAMES = ["C", "C#", "D", "D#", "E", "F", "F#", "G", "G#", "A", "A#", "B"]
 
 def separate_stems(audio_path: str, output_dir: str) -> dict[str, str]:
     """
-    Run Demucs htdemucs on the audio and return paths to separated stems.
-    Uses --two-stems=other to get: other (horn/melody) and the rest.
-
-    Returns dict with at least key "other" pointing to the isolated stem WAV.
+    Run Demucs CLI and return paths to separated stems.
+    Requires torchcodec: pip install torchcodec
     """
     demucs = shutil.which("demucs") or "demucs"
     out = Path(output_dir) / "demucs"
 
     logger.info("Running Demucs source separation (this may take a while)...")
+    # htdemucs_6s separates guitar + piano, leaving "other" = horn only
     result = subprocess.run(
-        [
-            demucs,
-            "--two-stems=other",
-            "--out", str(out),
-            "--filename", "{stem}.{ext}",
-            audio_path,
-        ],
-        capture_output=True,
-        text=True,
+        [demucs, "--name", "htdemucs_6s", "--out", str(out), audio_path],
+        capture_output=True, text=True,
     )
     if result.returncode != 0:
         logger.warning(f"Demucs failed, falling back to original audio.\n{result.stderr}")
-        return {"other": audio_path, "no_other": audio_path}
+        return {"other": audio_path}
 
-    # Demucs outputs under: out/htdemucs/<track_name>/{stem}.wav
     track_name = Path(audio_path).stem
-    stem_dir = out / "htdemucs" / track_name
-    stems = {}
-    for stem_file in stem_dir.glob("*.wav"):
-        stems[stem_file.stem] = str(stem_file)
+    stem_dir = out / "htdemucs_6s" / track_name
+    stems = {f.stem: str(f) for f in stem_dir.glob("*.wav")}
 
     if "other" not in stems:
         logger.warning("Demucs 'other' stem not found, using original audio.")
         stems["other"] = audio_path
+        return stems
+
+    # Mix other + vocals to capture brass bleed (trombone often lands in vocals)
+    if "vocals" in stems:
+        mixed_path = str(stem_dir / "horn_mixed.wav")
+        mix_result = subprocess.run([
+            shutil.which("ffmpeg") or "ffmpeg", "-y",
+            "-i", stems["other"],
+            "-i", stems["vocals"],
+            "-filter_complex", "amix=inputs=2:normalize=0",
+            mixed_path,
+        ], capture_output=True, text=True)
+
+        if mix_result.returncode == 0:
+            stems["other"] = mixed_path
+            logger.info("Mixed other + vocals for horn_mixed stem")
 
     logger.info(f"Demucs stems: {list(stems.keys())}")
     return stems

@@ -55,10 +55,11 @@ def extract_clips(
             end = min(end, video_duration)
         duration = end - start
 
-        video_out = str(out / f"clip_{i+1:03d}.mp4")
-        audio_out = str(out / f"clip_{i+1:03d}.wav")
+        detection_type = getattr(seg, "detection_type", "face")
+        video_out = str(out / f"clip_{i+1:03d}_{detection_type}.mp4")
+        audio_out = str(out / f"clip_{i+1:03d}_{detection_type}.wav")
 
-        logger.info(f"Extracting clip {i+1}/{len(segments)}: {start:.1f}s – {end:.1f}s")
+        logger.info(f"Extracting clip {i+1}/{len(segments)} [{detection_type}]: {start:.1f}s – {end:.1f}s")
 
         # Extract video clip (re-encode to ensure clean cut points)
         _run([
@@ -85,6 +86,7 @@ def extract_clips(
 
         clips.append({
             "clip_index": i + 1,
+            "detection_type": detection_type,
             "start": start,
             "end": end,
             "duration": duration,

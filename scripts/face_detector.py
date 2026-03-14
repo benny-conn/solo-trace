@@ -20,6 +20,7 @@ logger = logging.getLogger(__name__)
 class Segment:
     start: float  # seconds
     end: float    # seconds
+    detection_type: str = "face"  # "face" | "audio" | "both"
 
     @property
     def duration(self) -> float:
