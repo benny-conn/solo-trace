@@ -1,0 +1,17 @@
+.venv
+output
+__pycache__
+*.jpg
+*.png
+*.jpeg
+*.mp4
+*.wav
+*.mp3
+*.m4a
+*.flac
+*.aac
+*.ogg
+*.webm
+*.db*
+
+SPEC.md
