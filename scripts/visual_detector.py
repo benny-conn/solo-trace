@@ -37,7 +37,7 @@ logger = logging.getLogger(__name__)
 # Positive = trombone; Negative = other brass instruments we're likely to confuse with.
 # These work without any reference images; reference images improve accuracy in dark venues.
 _POSITIVE_PROMPTS = [
-    "a person playing slide trombone",
+    "a person playing trombone on stage",
     "jazz trombone player on stage",
     "brass instrument with a slide being played",
     "trombone slide extended while playing",
@@ -66,7 +66,7 @@ class TromboneVisualDetector:
     Uses CLIP image-text (and optionally image-image) similarity to verify
     that a trombone is visible in the frames of an audio-matched segment.
 
-    Score = mean(positive_similarities) - mean(negative_similarities)
+    Score = mean(positive_similarities across all reference images) - mean(negative_similarities)
     averaged over sampled frames. Positive score → trombone more likely.
 
     If reference_images are provided, their CLIP embeddings are added to the
@@ -147,7 +147,7 @@ class TromboneVisualDetector:
                 if not ok:
                     continue
                 img_emb = self._embed_image_file(str(frame_path))
-                pos_sim = float(np.dot(img_emb, self._ref_embs.T).max())  # best-matching reference
+                pos_sim = float(np.dot(img_emb, self._ref_embs.T).mean())  # avg across reference images
                 neg_sim = float(np.dot(img_emb, self._neg_embs.T).mean())
                 sc = pos_sim - neg_sim
                 frame_scores.append((ts, sc))
