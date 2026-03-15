@@ -4,9 +4,8 @@ transformers>=4.40.0
 # Video download
 yt-dlp>=2023.12.30
 
-# Source separation (torchcodec required by torchaudio 2.6+ for audio saving)
-demucs>=4.0.0
-torchcodec>=0.1.0
+# Source separation (pin to 4.0.0 — 4.0.1 added torchcodec which has no arm64 Linux wheels)
+demucs==4.0.0
 
 # Pitch detection / MIDI transcription
 basic-pitch>=0.3.0
