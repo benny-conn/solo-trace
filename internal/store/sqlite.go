@@ -5,6 +5,7 @@ import (
 	"database/sql"
 	"fmt"
 	"os"
+	"strings"
 	"time"
 
 	_ "modernc.org/sqlite"
@@ -44,8 +45,18 @@ func (s *SQLiteStore) migrate() error {
 		// Fall back to inline schema if file not found (e.g. in container)
 		schema = []byte(inlineSchema)
 	}
-	_, err = s.db.Exec(string(schema))
-	return err
+	if _, err = s.db.Exec(string(schema)); err != nil {
+		return err
+	}
+	// Additive alterations: ignored if the column already exists (fresh schema includes it).
+	for _, alt := range []string{
+		`alter table jobs add column video_upload_date text`,
+	} {
+		if _, err := s.db.Exec(alt); err != nil && !strings.Contains(err.Error(), "duplicate column name") {
+			return err
+		}
+	}
+	return nil
 }
 
 // ── Persons ───────────────────────────────────────────────────────────────────
@@ -109,7 +120,7 @@ func (s *SQLiteStore) CreateJob(ctx context.Context, arg CreateJobParams) (Job, 
 
 func (s *SQLiteStore) GetJob(ctx context.Context, id string) (Job, error) {
 	row := s.db.QueryRowContext(ctx,
-		`select id, person_id, video_url, video_title, status, error_message,
+		`select id, person_id, video_url, video_title, video_upload_date, status, error_message,
 		        video_duration_seconds, start_time_offset, created_at, updated_at
 		 from jobs where id = ?`, id)
 	return scanJob(row)
@@ -118,9 +129,9 @@ func (s *SQLiteStore) GetJob(ctx context.Context, id string) (Job, error) {
 func (s *SQLiteStore) UpdateJob(ctx context.Context, arg UpdateJobParams) (Job, error) {
 	_, err := s.db.ExecContext(ctx,
 		`update jobs
-		 set video_title=?, status=?, error_message=?, video_duration_seconds=?, updated_at=?
+		 set video_title=?, video_upload_date=?, status=?, error_message=?, video_duration_seconds=?, updated_at=?
 		 where id=?`,
-		arg.VideoTitle, string(arg.Status), arg.ErrorMessage, arg.VideoDurationSeconds,
+		arg.VideoTitle, arg.VideoUploadDate, string(arg.Status), arg.ErrorMessage, arg.VideoDurationSeconds,
 		time.Now().UTC(), arg.ID,
 	)
 	if err != nil {
@@ -131,7 +142,7 @@ func (s *SQLiteStore) UpdateJob(ctx context.Context, arg UpdateJobParams) (Job, 
 
 func (s *SQLiteStore) ListJobsByPerson(ctx context.Context, personID string) ([]Job, error) {
 	rows, err := s.db.QueryContext(ctx,
-		`select id, person_id, video_url, video_title, status, error_message,
+		`select id, person_id, video_url, video_title, video_upload_date, status, error_message,
 		        video_duration_seconds, start_time_offset, created_at, updated_at
 		 from jobs where person_id = ? order by created_at desc`, personID)
 	if err != nil {
@@ -215,7 +226,7 @@ func scanJob(s scanner) (Job, error) {
 	var j Job
 	var status string
 	err := s.Scan(
-		&j.ID, &j.PersonID, &j.VideoURL, &j.VideoTitle,
+		&j.ID, &j.PersonID, &j.VideoURL, &j.VideoTitle, &j.VideoUploadDate,
 		&status, &j.ErrorMessage, &j.VideoDurationSeconds,
 		&j.StartTimeOffset, &j.CreatedAt, &j.UpdatedAt,
 	)
@@ -280,7 +291,7 @@ create table if not exists persons (
 );
 create table if not exists jobs (
 	id text primary key, person_id text not null references persons(id),
-	video_url text not null, video_title text,
+	video_url text not null, video_title text, video_upload_date text,
 	status text not null default 'pending', error_message text,
 	video_duration_seconds real, start_time_offset text,
 	created_at datetime not null default (datetime('now')),

@@ -103,6 +103,7 @@ Submit a video processing job.
   "PersonID": "2abc123...",
   "VideoURL": "https://youtube.com/watch?v=...",
   "VideoTitle": null,
+  "VideoUploadDate": null,
   "Status": "pending",
   "ErrorMessage": null,
   "VideoDurationSeconds": null,
@@ -126,6 +127,7 @@ Poll a job's status.
   "PersonID": "2abc123...",
   "VideoURL": "https://youtube.com/watch?v=...",
   "VideoTitle": "Jazz Concert 2026",
+  "VideoUploadDate": "2026-03-15",
   "Status": "done",
   "ErrorMessage": null,
   "VideoDurationSeconds": 7234.5,
@@ -180,6 +182,78 @@ Get a single performance by ID.
 List all performances for a person, newest first.
 
 **Response** `200` — array of performance objects
+
+---
+
+## Analytics
+
+### `GET /api/persons/:id/analytics`
+Aggregate stats across all of a person's performances and gig history.
+
+**Response** `200`
+```json
+{
+  "person_id": "2abc123...",
+
+  "attendance": {
+    "total_gigs": 47,
+    "first_gig": "2024-01-12",
+    "most_recent_gig": "2026-03-14",
+    "longest_streak_days": 4,
+    "busiest_week": {
+      "week_of": "2025-11-03",
+      "count": 5
+    },
+    "gigs_by_month": [
+      { "month": "2025-11", "count": 9 },
+      { "month": "2025-12", "count": 6 }
+    ],
+    "gigs_by_day_of_week": [
+      { "day": "Saturday", "count": 18 },
+      { "day": "Sunday",   "count": 12 }
+    ]
+  },
+
+  "music": {
+    "total_notes": 8412,
+    "clips_analyzed": 61,
+    "clips_missing_analysis": 3,
+    "avg_notes_per_clip": 137.9,
+    "top_notes": [
+      { "note": "Bb", "count": 940 },
+      { "note": "F",  "count": 820 }
+    ],
+    "highest_note_ever": "Bb5",
+    "lowest_note_ever": "F2",
+    "avg_pitch_range_semitones": 21.4,
+    "widest_pitch_range_semitones": 31,
+    "avg_note_density_per_s": 2.8,
+    "avg_note_duration_s": 0.214,
+    "longest_phrase": {
+      "notes": 34,
+      "duration_s": 11.2,
+      "clip_id": "4def456..."
+    }
+  },
+
+  "performances": {
+    "total_clips": 64,
+    "total_duration_seconds": 4218.5,
+    "avg_duration_seconds": 65.9,
+    "avg_audio_peak": 0.731,
+    "peak_clip_id": "4def456..."
+  }
+}
+```
+
+**Notes:**
+- `attendance.total_gigs` — distinct dates with at least one completed job; multiple videos from the same day count as one gig.
+- `attendance.longest_streak_days` — longest run of consecutive calendar days with a gig.
+- `attendance.busiest_week` — ISO calendar week with the most gig days; `week_of` is the Monday of that week.
+- `music.top_notes` — top 7 pitch classes (ignoring octave) by total count across all clips.
+- `music.highest_note_ever` / `lowest_note_ever` — single highest/lowest note played across all analyzed clips.
+- `music.longest_phrase` — clip containing the most-notes-in-a-row without a rest gap > 0.5s.
+- Fields may be `null` if no clips have been analyzed (transcription failed or not yet run).
 
 ---
 

@@ -37,6 +37,8 @@ func SetupRoutes(r *gin.Engine, h *Handler) {
 		api.GET("/performances/latest", h.GetLatestPerformance)
 		api.GET("/performances/:id", h.GetPerformance)
 		api.GET("/persons/:id/performances", h.ListPerformancesByPerson)
+
+		api.GET("/persons/:id/analytics", h.GetPersonAnalytics)
 	}
 }
 

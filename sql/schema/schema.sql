@@ -14,6 +14,7 @@ create table if not exists jobs (
     person_id               text not null references persons(id),
     video_url               text not null,
     video_title             text,
+    video_upload_date       text,
     status                  text not null default 'pending', -- pending | processing | done | failed
     error_message           text,
     video_duration_seconds  real,

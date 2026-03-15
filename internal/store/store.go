@@ -30,6 +30,7 @@ type Job struct {
 	PersonID             string
 	VideoURL             string
 	VideoTitle           *string
+	VideoUploadDate      *string
 	Status               JobStatus
 	ErrorMessage         *string
 	VideoDurationSeconds *float64
@@ -83,6 +84,7 @@ type CreateJobParams struct {
 type UpdateJobParams struct {
 	ID                   string
 	VideoTitle           *string
+	VideoUploadDate      *string
 	Status               JobStatus
 	ErrorMessage         *string
 	VideoDurationSeconds *float64

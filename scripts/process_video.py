@@ -87,9 +87,9 @@ def _validate_url(url: str) -> None:
         raise ValueError(f"Blocked hostname: {hostname!r}")
 
 
-def _get_video(video_arg: str, dest_dir: Path) -> tuple[str, str]:
+def _get_video(video_arg: str, dest_dir: Path) -> tuple[str, str, str | None]:
     """
-    Returns (video_path, title).
+    Returns (video_path, title, upload_date).
     If video_arg is a local file, copies it to dest_dir and uses the filename as title.
     If it's a URL, downloads it with yt-dlp.
     """
@@ -99,13 +99,13 @@ def _get_video(video_arg: str, dest_dir: Path) -> tuple[str, str]:
         if dest.resolve() != src.resolve():
             shutil.copy2(src, dest)
         logger.info(f"Using local file: {dest}")
-        return str(dest), src.stem
+        return str(dest), src.stem, None
 
     _validate_url(video_arg)
     return _download_video(video_arg, str(dest_dir / "source"))
 
 
-def _download_video(url: str, output_path: str) -> tuple[str, str]:
+def _download_video(url: str, output_path: str) -> tuple[str, str, str | None]:
     try:
         import yt_dlp
     except ImportError:
@@ -123,13 +123,18 @@ def _download_video(url: str, output_path: str) -> tuple[str, str]:
         info = ydl.extract_info(url, download=True)
         title = info.get("title", "unknown")
         ext = info.get("ext", "mp4")
+        raw_date = info.get("upload_date")  # "YYYYMMDD" or None
+
+    upload_date = None
+    if raw_date and len(raw_date) == 8:
+        upload_date = f"{raw_date[:4]}-{raw_date[4:6]}-{raw_date[6:]}"
 
     downloaded = outtmpl + f".{ext}"
     if not Path(downloaded).exists():
         downloaded = outtmpl + ".mp4"
 
-    logger.info(f"Downloaded: {downloaded} (title: {title!r})")
-    return downloaded, title
+    logger.info(f"Downloaded: {downloaded} (title: {title!r}, date: {upload_date})")
+    return downloaded, title, upload_date
 
 
 def process(args: argparse.Namespace) -> dict:
@@ -145,6 +150,7 @@ def process(args: argparse.Namespace) -> dict:
         "instrument": args.instrument,
         "video": args.video,
         "video_title": None,
+        "video_upload_date": None,
         "model": args.model,
         "processed_at": datetime.now(timezone.utc).isoformat(),
         "detection_params": {
@@ -161,8 +167,9 @@ def process(args: argparse.Namespace) -> dict:
     }
 
     # ── 1. Get video ──────────────────────────────────────────────────────────
-    video_path, video_title = _get_video(args.video, video_dir)
+    video_path, video_title, video_upload_date = _get_video(args.video, video_dir)
     result["video_title"] = video_title
+    result["video_upload_date"] = video_upload_date
     video_duration = get_video_duration(video_path)
     result["video_duration_seconds"] = round(video_duration, 2)
 

@@ -42,6 +42,7 @@ type analysisR2Fields struct {
 
 type scriptResult struct {
 	VideoTitle           *string      `json:"video_title"`
+	VideoUploadDate      *string      `json:"video_upload_date"`
 	VideoDurationSeconds *float64     `json:"video_duration_seconds"`
 	Clips                []resultClip `json:"clips"`
 	Errors               []string     `json:"errors"`
@@ -87,6 +88,7 @@ func Run(jobID string, personID string, videoURL string, startTimeOffset *string
 	if _, err := s.UpdateJob(ctx, store.UpdateJobParams{
 		ID:                   jobID,
 		VideoTitle:           result.VideoTitle,
+		VideoUploadDate:      result.VideoUploadDate,
 		Status:               store.JobStatusDone,
 		VideoDurationSeconds: result.VideoDurationSeconds,
 	}); err != nil {
