@@ -12,6 +12,7 @@ FROM python:3.11-slim-bullseye
 
 RUN apt-get update && apt-get install -y --no-install-recommends \
     ca-certificates ffmpeg curl \
+    build-essential \
     && rm -rf /var/lib/apt/lists/*
 
 # Copy Go binary
