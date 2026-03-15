@@ -39,29 +39,24 @@ type Job struct {
 }
 
 type Clip struct {
-	ID                   string
-	JobID                string
-	PersonID             string
-	ClipIndex            int
-	StartTime            float64
-	EndTime              float64
-	Duration             float64
-	R2VideoKey           *string
-	R2VideoURL           *string
-	R2MidiKey            *string
-	R2MidiURL            *string
-	AudioPeak            *float64
-	AudioHitCount        *int
-	AudioTotalWindows    *int
-	AudioHitRatio        *float64
-	VisualScore          *float64
-	BPM                  *float64
-	KeyName              *string
-	Mode                 *string
-	EnergyMean           *float64
-	SpectralCentroidMean *float64
-	NoteEvents           *string // raw JSON
-	CreatedAt            time.Time
+	ID                string
+	JobID             string
+	PersonID          string
+	ClipIndex         int
+	StartTime         float64
+	EndTime           float64
+	Duration          float64
+	R2VideoKey        *string
+	R2VideoURL        *string
+	R2MidiKey         *string
+	R2MidiURL         *string
+	AudioPeak         *float64
+	AudioHitCount     *int
+	AudioTotalWindows *int
+	AudioHitRatio     *float64
+	VisualScore       *float64
+	Analysis          *string // JSON blob: note_events, stats, etc.
+	CreatedAt         time.Time
 }
 
 // ── Param types ───────────────────────────────────────────────────────────────
@@ -94,28 +89,23 @@ type UpdateJobParams struct {
 }
 
 type CreateClipParams struct {
-	ID                   string
-	JobID                string
-	PersonID             string
-	ClipIndex            int
-	StartTime            float64
-	EndTime              float64
-	Duration             float64
-	R2VideoKey           *string
-	R2VideoURL           *string
-	R2MidiKey            *string
-	R2MidiURL            *string
-	AudioPeak            *float64
-	AudioHitCount        *int
-	AudioTotalWindows    *int
-	AudioHitRatio        *float64
-	VisualScore          *float64
-	BPM                  *float64
-	KeyName              *string
-	Mode                 *string
-	EnergyMean           *float64
-	SpectralCentroidMean *float64
-	NoteEvents           *string
+	ID                string
+	JobID             string
+	PersonID          string
+	ClipIndex         int
+	StartTime         float64
+	EndTime           float64
+	Duration          float64
+	R2VideoKey        *string
+	R2VideoURL        *string
+	R2MidiKey         *string
+	R2MidiURL         *string
+	AudioPeak         *float64
+	AudioHitCount     *int
+	AudioTotalWindows *int
+	AudioHitRatio     *float64
+	VisualScore       *float64
+	Analysis          *string // JSON blob
 }
 
 // ── Store interface ───────────────────────────────────────────────────────────

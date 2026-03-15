@@ -40,13 +40,8 @@ create table if not exists clips (
     audio_total_windows     integer,
     audio_hit_ratio         real,
     visual_score            real,
-    -- audio analysis
-    bpm                     real,
-    key_name                text,
-    mode                    text,
-    energy_mean             real,
-    spectral_centroid_mean  real,
-    note_events             text,  -- JSON blob
+    -- analysis (JSON blob: note_events, note_count, most_common_notes, etc.)
+    analysis                text,
     created_at              datetime not null default (datetime('now'))
 );
 

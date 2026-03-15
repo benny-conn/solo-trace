@@ -4,7 +4,7 @@ image: bennyconn/solo-grabber
 servers:
   web:
     hosts:
-      - YOUR_HETZNER_IP   # replace with actual IP after provisioning
+      - YOUR_MAC_MINI_LOCAL_IP   # e.g. 192.168.1.x — find with: ipconfig getifaddr en0
 
 registry:
   username: bennyconn
@@ -12,7 +12,7 @@ registry:
     - KAMAL_REGISTRY_PASSWORD
 
 builder:
-  arch: amd64
+  arch: arm64
 
 env:
   clear:
@@ -44,8 +44,8 @@ volumes:
 
 proxy:
   app_port: 4000
-  ssl: true
-  host: YOUR_DOMAIN   # e.g. grabber.yourdomain.com
+  ssl: false
+  host: grabber.yourdomain.com
   healthcheck:
     path: /health
     interval: 5

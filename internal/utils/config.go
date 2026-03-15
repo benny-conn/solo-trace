@@ -17,6 +17,12 @@ func LoadConfig() {
 	viper.SetDefault("JOBS_DIR", "./jobs")
 	viper.SetDefault("PYTHON_BIN", "python")
 	viper.SetDefault("PYTHON_SCRIPT_PATH", "./scripts/process_video.py")
+	viper.SetDefault("REFERENCE_AUDIO_PATH", "./scripts/me_stems/horn_mixed.wav")
+	viper.SetDefault("REFERENCE_IMAGES_DIR", "./scripts/references")
+	viper.SetDefault("AUDIO_THRESHOLD", "")
+	viper.SetDefault("MIN_PEAK", "")
+	viper.SetDefault("DEFAULT_START_TIME", "")
+	viper.SetDefault("VISUAL_THRESHOLD", "")
 
 	// Cloudflare R2 (optional — omit to skip uploads)
 	viper.SetDefault("R2_ACCOUNT_ID", "")

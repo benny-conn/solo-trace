@@ -45,7 +45,7 @@ def upload_file(local_path: str, r2_key: str) -> str:
 
     Args:
         local_path: Local file path.
-        r2_key: Destination key in R2 (e.g. "clips/person_id/clip_001.mp4").
+        r2_key: Destination key in R2 (e.g. "clips/job_id/clip_001.mp4").
 
     Returns:
         Public URL string.
@@ -70,7 +70,7 @@ def upload_file(local_path: str, r2_key: str) -> str:
     return f"https://{account_id}.r2.cloudflarestorage.com/{bucket}/{r2_key}"
 
 
-def upload_clip(clip: dict, person_id: str) -> dict:
+def upload_clip(clip: dict, job_id: str) -> dict:
     """
     Upload a clip's video and MIDI files to R2.
     Mutates the clip dict in place, adding "r2_video_key", "r2_video_url",
@@ -79,7 +79,7 @@ def upload_clip(clip: dict, person_id: str) -> dict:
     Returns the updated clip dict.
     """
     clip_index = clip["clip_index"]
-    base_key = f"clips/{person_id}/clip_{clip_index:03d}"
+    base_key = f"clips/{job_id}/clip_{clip_index:03d}"
 
     # Upload video
     video_key = f"{base_key}.mp4"

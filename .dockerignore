@@ -1,0 +1,47 @@
+# Python
+scripts/.venv
+scripts/__pycache__
+scripts/output*/
+scripts/models/
+scripts/me_stems/
+scripts/references/
+scripts/jam_history.json
+
+# Audio/video files
+**/*.mp4
+**/*.wav
+**/*.mp3
+**/*.m4a
+**/*.flac
+**/*.mov
+**/*.webm
+**/*.aac
+**/*.ogg
+
+# Reference data (mounted at runtime via /data volume)
+data/
+
+# Database
+*.db
+*.db-shm
+*.db-wal
+
+# Job output
+jobs/
+
+# Env & secrets
+.env*
+.env.local
+
+# Go build artifacts
+solo-grabber
+
+# Deployment config
+.kamal/
+config/deploy.yml
+
+# Dev/test
+**/__pycache__
+**/*.pyc
+.DS_Store
+SPEC.md

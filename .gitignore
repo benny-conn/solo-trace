@@ -30,7 +30,9 @@ jobs/
 scripts/jam_history.json
 
 # Env & secrets
-.env
+.env*
+!.env.example
+
 *.crt
 
 # Deployment

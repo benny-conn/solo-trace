@@ -17,12 +17,12 @@ import (
 
 // resultClip matches the JSON structure output by process_video.py.
 type resultClip struct {
-	ClipIndex  int     `json:"clip_index"`
-	Start      float64 `json:"start"`
-	End        float64 `json:"end"`
-	Duration   float64 `json:"duration"`
-	R2VideoKey *string `json:"r2_video_key"`
-	R2VideoURL *string `json:"r2_video_url"`
+	ClipIndex  int             `json:"clip_index"`
+	Start      float64         `json:"start"`
+	End        float64         `json:"end"`
+	Duration   float64         `json:"duration"`
+	R2VideoKey *string         `json:"r2_video_key"`
+	R2VideoURL *string         `json:"r2_video_url"`
 	Detection  struct {
 		AudioPeak         *float64 `json:"audio_peak"`
 		AudioHitCount     *int     `json:"audio_hit_count"`
@@ -30,16 +30,14 @@ type resultClip struct {
 		AudioHitRatio     *float64 `json:"audio_hit_ratio"`
 		VisualScore       *float64 `json:"visual_score"`
 	} `json:"detection"`
-	Analysis struct {
-		BPM                  *float64 `json:"bpm"`
-		KeyName              *string  `json:"key"`
-		Mode                 *string  `json:"mode"`
-		EnergyMean           *float64 `json:"energy_mean"`
-		SpectralCentroidMean *float64 `json:"spectral_centroid_mean"`
-		MidiR2Key            *string  `json:"r2_midi_key"`
-		MidiR2URL            *string  `json:"r2_midi_url"`
-		NoteEvents           any      `json:"note_events"`
-	} `json:"analysis"`
+	// Analysis is stored as a raw JSON blob; R2 MIDI keys are also extracted from it.
+	Analysis json.RawMessage `json:"analysis"`
+}
+
+// analysisR2Fields is used only to extract upload URLs from the analysis blob.
+type analysisR2Fields struct {
+	MidiR2Key *string `json:"r2_midi_key"`
+	MidiR2URL *string `json:"r2_midi_url"`
 }
 
 type scriptResult struct {
@@ -67,7 +65,7 @@ func Run(jobID string, personID string, videoURL string, startTimeOffset *string
 	}
 
 	resultPath := filepath.Join(jobDir, "result.json")
-	args := buildArgs(videoURL, personID, jobDir, startTimeOffset)
+	args := buildArgs(videoURL, personID, jobID, jobDir, startTimeOffset)
 
 	log.Printf("[runner] job %s: starting Python pipeline", jobID)
 	cmd := exec.Command(viper.GetString("PYTHON_BIN"), args...)
@@ -97,45 +95,53 @@ func Run(jobID string, personID string, videoURL string, startTimeOffset *string
 
 	// Save clips
 	for _, rc := range result.Clips {
-		noteEventsJSON := marshalNoteEvents(rc.Analysis.NoteEvents)
+		// Extract R2 MIDI keys from the analysis blob (populated by uploader.py)
+		var r2 analysisR2Fields
+		if rc.Analysis != nil {
+			_ = json.Unmarshal(rc.Analysis, &r2)
+		}
+		analysisJSON := rawJSONString(rc.Analysis)
+
 		if _, err := s.CreateClip(ctx, store.CreateClipParams{
-			ID:                   ksuid.New().String(),
-			JobID:                jobID,
-			PersonID:             personID,
-			ClipIndex:            rc.ClipIndex,
-			StartTime:            rc.Start,
-			EndTime:              rc.End,
-			Duration:             rc.Duration,
-			R2VideoKey:           rc.R2VideoKey,
-			R2VideoURL:           rc.R2VideoURL,
-			R2MidiKey:            rc.Analysis.MidiR2Key,
-			R2MidiURL:            rc.Analysis.MidiR2URL,
-			AudioPeak:            rc.Detection.AudioPeak,
-			AudioHitCount:        rc.Detection.AudioHitCount,
-			AudioTotalWindows:    rc.Detection.AudioTotalWindows,
-			AudioHitRatio:        rc.Detection.AudioHitRatio,
-			VisualScore:          rc.Detection.VisualScore,
-			BPM:                  rc.Analysis.BPM,
-			KeyName:              rc.Analysis.KeyName,
-			Mode:                 rc.Analysis.Mode,
-			EnergyMean:           rc.Analysis.EnergyMean,
-			SpectralCentroidMean: rc.Analysis.SpectralCentroidMean,
-			NoteEvents:           noteEventsJSON,
+			ID:                ksuid.New().String(),
+			JobID:             jobID,
+			PersonID:          personID,
+			ClipIndex:         rc.ClipIndex,
+			StartTime:         rc.Start,
+			EndTime:           rc.End,
+			Duration:          rc.Duration,
+			R2VideoKey:        rc.R2VideoKey,
+			R2VideoURL:        rc.R2VideoURL,
+			R2MidiKey:         r2.MidiR2Key,
+			R2MidiURL:         r2.MidiR2URL,
+			AudioPeak:         rc.Detection.AudioPeak,
+			AudioHitCount:     rc.Detection.AudioHitCount,
+			AudioTotalWindows: rc.Detection.AudioTotalWindows,
+			AudioHitRatio:     rc.Detection.AudioHitRatio,
+			VisualScore:       rc.Detection.VisualScore,
+			Analysis:          analysisJSON,
 		}); err != nil {
 			log.Printf("[runner] job %s: failed to save clip %d: %v", jobID, rc.ClipIndex, err)
 		}
 	}
 
 	log.Printf("[runner] job %s: done — %d clip(s) saved", jobID, len(result.Clips))
+
+	// Clean up job directory — videos, clips, and stems are large and no longer
+	// needed once clips are uploaded to R2 and metadata is in the DB.
+	if err := os.RemoveAll(jobDir); err != nil {
+		log.Printf("[runner] job %s: warning — could not clean up job dir: %v", jobID, err)
+	}
 }
 
-func buildArgs(videoURL, personID, jobDir string, startTimeOffset *string) []string {
+func buildArgs(videoURL, personID, jobID, jobDir string, startTimeOffset *string) []string {
 	scriptPath := viper.GetString("PYTHON_SCRIPT_PATH")
 
 	args := []string{
 		scriptPath,
 		"--video", videoURL,
 		"--person-id", personID,
+		"--job-id", jobID,
 		"--output-dir", jobDir,
 		"--reference-audio", viper.GetString("REFERENCE_AUDIO_PATH"),
 	}
@@ -222,14 +228,11 @@ func setFailed(ctx context.Context, s store.Store, jobID string, msg string) {
 	}
 }
 
-func marshalNoteEvents(v any) *string {
-	if v == nil {
+// rawJSONString converts a json.RawMessage to a *string for DB storage.
+func rawJSONString(raw json.RawMessage) *string {
+	if raw == nil {
 		return nil
 	}
-	b, err := json.Marshal(v)
-	if err != nil {
-		return nil
-	}
-	s := string(b)
+	s := string(raw)
 	return &s
 }

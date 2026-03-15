@@ -150,14 +150,13 @@ func (s *SQLiteStore) CreateClip(ctx context.Context, arg CreateClipParams) (Cli
 			id, job_id, person_id, clip_index, start_time, end_time, duration,
 			r2_video_key, r2_video_url, r2_midi_key, r2_midi_url,
 			audio_peak, audio_hit_count, audio_total_windows, audio_hit_ratio, visual_score,
-			bpm, key_name, mode, energy_mean, spectral_centroid_mean, note_events, created_at
-		) values (?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?)`,
+			analysis, created_at
+		) values (?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?)`,
 		arg.ID, arg.JobID, arg.PersonID, arg.ClipIndex,
 		arg.StartTime, arg.EndTime, arg.Duration,
 		arg.R2VideoKey, arg.R2VideoURL, arg.R2MidiKey, arg.R2MidiURL,
 		arg.AudioPeak, arg.AudioHitCount, arg.AudioTotalWindows, arg.AudioHitRatio, arg.VisualScore,
-		arg.BPM, arg.KeyName, arg.Mode, arg.EnergyMean, arg.SpectralCentroidMean,
-		arg.NoteEvents, now,
+		arg.Analysis, now,
 	)
 	if err != nil {
 		return Clip{}, err
@@ -199,7 +198,7 @@ const clipSelectCols = `
 	select id, job_id, person_id, clip_index, start_time, end_time, duration,
 	       r2_video_key, r2_video_url, r2_midi_key, r2_midi_url,
 	       audio_peak, audio_hit_count, audio_total_windows, audio_hit_ratio, visual_score,
-	       bpm, key_name, mode, energy_mean, spectral_centroid_mean, note_events, created_at
+	       analysis, created_at
 	from clips`
 
 type scanner interface {
@@ -231,8 +230,7 @@ func scanClip(s scanner) (Clip, error) {
 		&c.StartTime, &c.EndTime, &c.Duration,
 		&c.R2VideoKey, &c.R2VideoURL, &c.R2MidiKey, &c.R2MidiURL,
 		&c.AudioPeak, &c.AudioHitCount, &c.AudioTotalWindows, &c.AudioHitRatio, &c.VisualScore,
-		&c.BPM, &c.KeyName, &c.Mode, &c.EnergyMean, &c.SpectralCentroidMean,
-		&c.NoteEvents, &c.CreatedAt,
+		&c.Analysis, &c.CreatedAt,
 	)
 	return c, err
 }
@@ -295,8 +293,7 @@ create table if not exists clips (
 	r2_video_key text, r2_video_url text, r2_midi_key text, r2_midi_url text,
 	audio_peak real, audio_hit_count integer, audio_total_windows integer,
 	audio_hit_ratio real, visual_score real,
-	bpm real, key_name text, mode text, energy_mean real, spectral_centroid_mean real,
-	note_events text, created_at datetime not null default (datetime('now'))
+	analysis text, created_at datetime not null default (datetime('now'))
 );
 create index if not exists idx_jobs_person_id   on jobs(person_id);
 create index if not exists idx_clips_job_id     on clips(job_id);

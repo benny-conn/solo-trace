@@ -291,7 +291,7 @@ def process(args: argparse.Namespace) -> dict:
         from uploader import upload_clip
         for clip in clips:
             try:
-                upload_clip(clip, args.person_id)
+                upload_clip(clip, args.job_id)
             except Exception as e:
                 logger.error(f"Upload failed for clip {clip['clip_index']}: {e}")
                 result["errors"].append(f"clip_{clip['clip_index']:03d}: upload failed — {e}")
@@ -317,6 +317,7 @@ def main() -> None:
                         help="Audio/video file of you playing (e.g. me.mov). "
                              "Used to build the reference embedding.")
     parser.add_argument("--person-id", required=True)
+    parser.add_argument("--job-id", required=True)
     parser.add_argument("--output-dir", default="./output")
     parser.add_argument("--instrument", default="unknown")
     parser.add_argument("--start-time", default="0",
