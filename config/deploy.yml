@@ -4,7 +4,7 @@ image: bennyconn/solo-trace
 servers:
   web:
     hosts:
-      - 192.168.1.64
+      - 192.168.1.12
 
 registry:
   username: bennyconn
