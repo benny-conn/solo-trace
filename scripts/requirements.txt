@@ -3,6 +3,7 @@ transformers>=4.40.0
 
 # Video download
 yt-dlp>=2025.1.15
+bgutil-ytdlp-pot-provider>=0.1.0
 
 # Source separation (pin to 4.0.0 — 4.0.1 added torchcodec which has no arm64 Linux wheels)
 # torchcodec required by torchaudio>=2.6; setuptools required by resampy (pkg_resources)
