@@ -87,7 +87,7 @@ def _validate_url(url: str) -> None:
         raise ValueError(f"Blocked hostname: {hostname!r}")
 
 
-def _get_video(video_arg: str, dest_dir: Path) -> tuple[str, str, str | None]:
+def _get_video(video_arg: str, dest_dir: Path, cookies_file: str | None = None) -> tuple[str, str, str | None]:
     """
     Returns (video_path, title, upload_date).
     If video_arg is a local file, copies it to dest_dir and uses the filename as title.
@@ -102,10 +102,10 @@ def _get_video(video_arg: str, dest_dir: Path) -> tuple[str, str, str | None]:
         return str(dest), src.stem, None
 
     _validate_url(video_arg)
-    return _download_video(video_arg, str(dest_dir / "source"))
+    return _download_video(video_arg, str(dest_dir / "source"), cookies_file=cookies_file)
 
 
-def _download_video(url: str, output_path: str) -> tuple[str, str, str | None]:
+def _download_video(url: str, output_path: str, cookies_file: str | None = None) -> tuple[str, str, str | None]:
     try:
         import yt_dlp
     except ImportError:
@@ -113,17 +113,37 @@ def _download_video(url: str, output_path: str) -> tuple[str, str, str | None]:
 
     logger.info(f"Downloading video: {url}")
     outtmpl = output_path.rstrip(".mp4")
-    ydl_opts = {
+    base_opts = {
         "outtmpl": outtmpl + ".%(ext)s",
-        "format": "bestvideo[ext=mp4]+bestaudio[ext=m4a]/best[ext=mp4]/best",
+        "format": "bestvideo+bestaudio/best",
         "merge_output_format": "mp4",
         "quiet": False,
+        "remote_components": ["ejs:npm"],
     }
-    with yt_dlp.YoutubeDL(ydl_opts) as ydl:
-        info = ydl.extract_info(url, download=True)
-        title = info.get("title", "unknown")
-        ext = info.get("ext", "mp4")
-        raw_date = info.get("upload_date")  # "YYYYMMDD" or None
+
+    attempts = [base_opts]
+    if cookies_file:
+        attempts.append({**base_opts, "cookiefile": cookies_file})
+
+    last_err: Exception | None = None
+    info = None
+    for i, ydl_opts in enumerate(attempts):
+        using_cookies = "cookiefile" in ydl_opts
+        logger.info(f"Download attempt {i + 1} ({'with' if using_cookies else 'without'} cookies)")
+        try:
+            with yt_dlp.YoutubeDL(ydl_opts) as ydl:
+                info = ydl.extract_info(url, download=True)
+            break
+        except yt_dlp.utils.DownloadError as e:
+            last_err = e
+            logger.warning(f"Attempt {i + 1} failed: {e}")
+
+    if info is None:
+        raise last_err
+
+    title = info.get("title", "unknown")
+    ext = info.get("ext", "mp4")
+    raw_date = info.get("upload_date")  # "YYYYMMDD" or None
 
     upload_date = None
     if raw_date and len(raw_date) == 8:
@@ -167,7 +187,7 @@ def process(args: argparse.Namespace) -> dict:
     }
 
     # ── 1. Get video ──────────────────────────────────────────────────────────
-    video_path, video_title, video_upload_date = _get_video(args.video, video_dir)
+    video_path, video_title, video_upload_date = _get_video(args.video, video_dir, cookies_file=args.cookies_file)
     result["video_title"] = video_title
     result["video_upload_date"] = video_upload_date
     video_duration = get_video_duration(video_path)
@@ -320,6 +340,8 @@ def main() -> None:
 
     parser.add_argument("--video", required=True,
                         help="YouTube URL or local file path of the video to process")
+    parser.add_argument("--cookies-file", default=None,
+                        help="Path to a Netscape-format cookies file for yt-dlp")
     parser.add_argument("--reference-audio", required=True,
                         help="Audio/video file of you playing (e.g. me.mov). "
                              "Used to build the reference embedding.")

@@ -178,6 +178,10 @@ func buildArgs(videoURL, personID, jobID, jobDir string, startTimeOffset *string
 		}
 	}
 
+	if cookiesFile := viper.GetString("YTDLP_COOKIES_FILE"); cookiesFile != "" {
+		args = append(args, "--cookies-file", cookiesFile)
+	}
+
 	if viper.GetString("R2_ACCOUNT_ID") == "" {
 		args = append(args, "--skip-upload")
 	}

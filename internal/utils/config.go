@@ -23,6 +23,7 @@ func LoadConfig() {
 	viper.SetDefault("MIN_PEAK", "")
 	viper.SetDefault("DEFAULT_START_TIME", "")
 	viper.SetDefault("VISUAL_THRESHOLD", "")
+	viper.SetDefault("YTDLP_COOKIES_FILE", "")
 
 	// Cloudflare R2 (optional — omit to skip uploads)
 	viper.SetDefault("R2_ACCOUNT_ID", "")
