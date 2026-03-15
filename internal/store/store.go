@@ -18,12 +18,11 @@ const (
 // ── Domain models ─────────────────────────────────────────────────────────────
 
 type Person struct {
-	ID                 string
-	Name               string
-	Instrument         string
-	ReferencePhotoPath *string
-	CreatedAt          time.Time
-	UpdatedAt          time.Time
+	ID         string
+	Name       string
+	Instrument string
+	CreatedAt  time.Time
+	UpdatedAt  time.Time
 }
 
 type Job struct {
@@ -34,6 +33,7 @@ type Job struct {
 	Status               JobStatus
 	ErrorMessage         *string
 	VideoDurationSeconds *float64
+	StartTimeOffset      *string
 	CreatedAt            time.Time
 	UpdatedAt            time.Time
 }
@@ -50,6 +50,11 @@ type Clip struct {
 	R2VideoURL           *string
 	R2MidiKey            *string
 	R2MidiURL            *string
+	AudioPeak            *float64
+	AudioHitCount        *int
+	AudioTotalWindows    *int
+	AudioHitRatio        *float64
+	VisualScore          *float64
 	BPM                  *float64
 	KeyName              *string
 	Mode                 *string
@@ -62,23 +67,22 @@ type Clip struct {
 // ── Param types ───────────────────────────────────────────────────────────────
 
 type CreatePersonParams struct {
-	ID                 string
-	Name               string
-	Instrument         string
-	ReferencePhotoPath *string
+	ID         string
+	Name       string
+	Instrument string
 }
 
 type UpdatePersonParams struct {
-	ID                 string
-	Name               string
-	Instrument         string
-	ReferencePhotoPath *string
+	ID         string
+	Name       string
+	Instrument string
 }
 
 type CreateJobParams struct {
-	ID       string
-	PersonID string
-	VideoURL string
+	ID              string
+	PersonID        string
+	VideoURL        string
+	StartTimeOffset *string
 }
 
 type UpdateJobParams struct {
@@ -101,6 +105,11 @@ type CreateClipParams struct {
 	R2VideoURL           *string
 	R2MidiKey            *string
 	R2MidiURL            *string
+	AudioPeak            *float64
+	AudioHitCount        *int
+	AudioTotalWindows    *int
+	AudioHitRatio        *float64
+	VisualScore          *float64
 	BPM                  *float64
 	KeyName              *string
 	Mode                 *string

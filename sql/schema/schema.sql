@@ -5,7 +5,6 @@ create table if not exists persons (
     id          text primary key,
     name        text not null,
     instrument  text not null default 'unknown',
-    reference_photo_path text,
     created_at  datetime not null default (datetime('now')),
     updated_at  datetime not null default (datetime('now'))
 );
@@ -18,6 +17,7 @@ create table if not exists jobs (
     status                  text not null default 'pending', -- pending | processing | done | failed
     error_message           text,
     video_duration_seconds  real,
+    start_time_offset       text,
     created_at              datetime not null default (datetime('now')),
     updated_at              datetime not null default (datetime('now'))
 );
@@ -34,6 +34,12 @@ create table if not exists clips (
     r2_video_url            text,
     r2_midi_key             text,
     r2_midi_url             text,
+    -- detection metadata
+    audio_peak              real,
+    audio_hit_count         integer,
+    audio_total_windows     integer,
+    audio_hit_ratio         real,
+    visual_score            real,
     -- audio analysis
     bpm                     real,
     key_name                text,

@@ -87,17 +87,19 @@ func runNightly(s store.Store) error {
 		return nil
 	}
 
-	// ── 3. Submit a job per person that has a reference photo ─────────────────
-	for _, person := range persons {
-		if person.ReferencePhotoPath == nil {
-			log.Printf("[cron] Skipping %s — no reference photo", person.Name)
-			continue
-		}
+	// ── 3. Submit a job per person ────────────────────────────────────────────
+	defaultStartTime := viper.GetString("DEFAULT_START_TIME")
+	var startTimeOffset *string
+	if defaultStartTime != "" {
+		startTimeOffset = &defaultStartTime
+	}
 
+	for _, person := range persons {
 		job, err := s.CreateJob(context.Background(), store.CreateJobParams{
-			ID:       ksuid.New().String(),
-			PersonID: person.ID,
-			VideoURL: videoURL,
+			ID:              ksuid.New().String(),
+			PersonID:        person.ID,
+			VideoURL:        videoURL,
+			StartTimeOffset: startTimeOffset,
 		})
 		if err != nil {
 			log.Printf("[cron] Failed to create job for %s: %v", person.Name, err)
@@ -105,7 +107,7 @@ func runNightly(s store.Store) error {
 		}
 
 		log.Printf("[cron] Submitted job %s for %s (%s)", job.ID, person.Name, videoURL)
-		go runner.Run(job.ID, person.ID, videoURL, *person.ReferencePhotoPath, s)
+		go runner.Run(job.ID, person.ID, videoURL, job.StartTimeOffset, s)
 	}
 
 	return nil

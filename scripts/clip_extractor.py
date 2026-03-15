@@ -8,9 +8,15 @@ All time values are in seconds (float).
 import logging
 import subprocess
 import shutil
+from dataclasses import dataclass
 from pathlib import Path
 
-from face_detector import Segment
+
+@dataclass
+class Segment:
+    start: float
+    end: float
+    detection_type: str = "audio"
 
 logger = logging.getLogger(__name__)
 

@@ -9,8 +9,9 @@ import (
 )
 
 type createJobRequest struct {
-	PersonID string `json:"person_id" binding:"required"`
-	VideoURL string `json:"video_url" binding:"required"`
+	PersonID        string  `json:"person_id" binding:"required"`
+	VideoURL        string  `json:"video_url" binding:"required"`
+	StartTimeOffset *string `json:"start_time_offset"`
 }
 
 func (h *Handler) CreateJob(c *gin.Context) {
@@ -20,21 +21,17 @@ func (h *Handler) CreateJob(c *gin.Context) {
 		return
 	}
 
-	// Verify person exists and has a reference photo
-	person, err := h.Store.GetPerson(c.Request.Context(), req.PersonID)
-	if err != nil {
+	// Verify person exists
+	if _, err := h.Store.GetPerson(c.Request.Context(), req.PersonID); err != nil {
 		c.JSON(http.StatusBadRequest, gin.H{"error": "person not found"})
-		return
-	}
-	if person.ReferencePhotoPath == nil {
-		c.JSON(http.StatusBadRequest, gin.H{"error": "person has no reference photo — upload one before submitting a job"})
 		return
 	}
 
 	job, err := h.Store.CreateJob(c.Request.Context(), store.CreateJobParams{
-		ID:       generateID(),
-		PersonID: req.PersonID,
-		VideoURL: req.VideoURL,
+		ID:              generateID(),
+		PersonID:        req.PersonID,
+		VideoURL:        req.VideoURL,
+		StartTimeOffset: req.StartTimeOffset,
 	})
 	if err != nil {
 		c.JSON(http.StatusInternalServerError, gin.H{"error": err.Error()})
@@ -42,7 +39,7 @@ func (h *Handler) CreateJob(c *gin.Context) {
 	}
 
 	// Run pipeline in background — returns immediately, job status reflects progress
-	go runner.Run(job.ID, person.ID, req.VideoURL, *person.ReferencePhotoPath, h.Store)
+	go runner.Run(job.ID, req.PersonID, req.VideoURL, job.StartTimeOffset, h.Store)
 
 	c.JSON(http.StatusCreated, job)
 }

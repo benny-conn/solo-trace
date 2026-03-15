@@ -8,6 +8,7 @@ import (
 	"os"
 	"os/exec"
 	"path/filepath"
+	"strings"
 
 	"github.com/benny-conn/solo-grabber/internal/store"
 	"github.com/segmentio/ksuid"
@@ -16,13 +17,20 @@ import (
 
 // resultClip matches the JSON structure output by process_video.py.
 type resultClip struct {
-	ClipIndex int     `json:"clip_index"`
-	Start     float64 `json:"start"`
-	End       float64 `json:"end"`
-	Duration  float64 `json:"duration"`
+	ClipIndex  int     `json:"clip_index"`
+	Start      float64 `json:"start"`
+	End        float64 `json:"end"`
+	Duration   float64 `json:"duration"`
 	R2VideoKey *string `json:"r2_video_key"`
 	R2VideoURL *string `json:"r2_video_url"`
-	Analysis  struct {
+	Detection  struct {
+		AudioPeak         *float64 `json:"audio_peak"`
+		AudioHitCount     *int     `json:"audio_hit_count"`
+		AudioTotalWindows *int     `json:"audio_total_windows"`
+		AudioHitRatio     *float64 `json:"audio_hit_ratio"`
+		VisualScore       *float64 `json:"visual_score"`
+	} `json:"detection"`
+	Analysis struct {
 		BPM                  *float64 `json:"bpm"`
 		KeyName              *string  `json:"key"`
 		Mode                 *string  `json:"mode"`
@@ -43,7 +51,7 @@ type scriptResult struct {
 
 // Run executes the Python processing pipeline for a job in the background.
 // It updates job status in the store as it progresses.
-func Run(jobID string, personID string, videoURL string, referencePhotoPath string, s store.Store) {
+func Run(jobID string, personID string, videoURL string, startTimeOffset *string, s store.Store) {
 	ctx := context.Background()
 
 	// Mark as processing
@@ -59,7 +67,7 @@ func Run(jobID string, personID string, videoURL string, referencePhotoPath stri
 	}
 
 	resultPath := filepath.Join(jobDir, "result.json")
-	args := buildArgs(videoURL, referencePhotoPath, personID, jobDir)
+	args := buildArgs(videoURL, personID, jobDir, startTimeOffset)
 
 	log.Printf("[runner] job %s: starting Python pipeline", jobID)
 	cmd := exec.Command(viper.GetString("PYTHON_BIN"), args...)
@@ -102,6 +110,11 @@ func Run(jobID string, personID string, videoURL string, referencePhotoPath stri
 			R2VideoURL:           rc.R2VideoURL,
 			R2MidiKey:            rc.Analysis.MidiR2Key,
 			R2MidiURL:            rc.Analysis.MidiR2URL,
+			AudioPeak:            rc.Detection.AudioPeak,
+			AudioHitCount:        rc.Detection.AudioHitCount,
+			AudioTotalWindows:    rc.Detection.AudioTotalWindows,
+			AudioHitRatio:        rc.Detection.AudioHitRatio,
+			VisualScore:          rc.Detection.VisualScore,
 			BPM:                  rc.Analysis.BPM,
 			KeyName:              rc.Analysis.KeyName,
 			Mode:                 rc.Analysis.Mode,
@@ -116,28 +129,69 @@ func Run(jobID string, personID string, videoURL string, referencePhotoPath stri
 	log.Printf("[runner] job %s: done — %d clip(s) saved", jobID, len(result.Clips))
 }
 
-func buildArgs(videoURL, referencePhotoPath, personID, jobDir string) []string {
+func buildArgs(videoURL, personID, jobDir string, startTimeOffset *string) []string {
 	scriptPath := viper.GetString("PYTHON_SCRIPT_PATH")
 
 	args := []string{
 		scriptPath,
-		"--video-url", videoURL,
-		"--reference-photo", referencePhotoPath,
+		"--video", videoURL,
 		"--person-id", personID,
 		"--output-dir", jobDir,
+		"--reference-audio", viper.GetString("REFERENCE_AUDIO_PATH"),
+	}
+
+	// Audio detection thresholds
+	if thresh := viper.GetString("AUDIO_THRESHOLD"); thresh != "" {
+		args = append(args, "--similarity-threshold", thresh)
+	}
+	if minPeak := viper.GetString("MIN_PEAK"); minPeak != "" {
+		args = append(args, "--min-peak", minPeak)
+	}
+
+	// Start time: job-level override takes precedence over global default
+	startTime := viper.GetString("DEFAULT_START_TIME")
+	if startTimeOffset != nil && *startTimeOffset != "" {
+		startTime = *startTimeOffset
+	}
+	if startTime != "" {
+		args = append(args, "--start-time", startTime)
+	}
+
+	// Visual check: enabled automatically when reference images are present
+	if refDir := viper.GetString("REFERENCE_IMAGES_DIR"); refDir != "" {
+		imgs := findReferenceImages(refDir)
+		if len(imgs) > 0 {
+			args = append(args, "--visual-check")
+			args = append(args, "--reference-images")
+			args = append(args, imgs...)
+			if vt := viper.GetString("VISUAL_THRESHOLD"); vt != "" {
+				args = append(args, "--visual-threshold", vt)
+			}
+		}
 	}
 
 	if viper.GetString("R2_ACCOUNT_ID") == "" {
 		args = append(args, "--skip-upload")
 	}
 
-	// Use audio fingerprint if one has been built for this person
-	fingerprintPath := viper.GetString("FINGERPRINT_PATH")
-	if fingerprintPath != "" {
-		args = append(args, "--fingerprint", fingerprintPath)
-	}
-
 	return args
+}
+
+// findReferenceImages returns paths to all image files in dir.
+func findReferenceImages(dir string) []string {
+	entries, err := os.ReadDir(dir)
+	if err != nil {
+		log.Printf("[runner] could not read REFERENCE_IMAGES_DIR %q: %v", dir, err)
+		return nil
+	}
+	imageExts := map[string]bool{".jpg": true, ".jpeg": true, ".png": true, ".webp": true}
+	var imgs []string
+	for _, e := range entries {
+		if !e.IsDir() && imageExts[strings.ToLower(filepath.Ext(e.Name()))] {
+			imgs = append(imgs, filepath.Join(dir, e.Name()))
+		}
+	}
+	return imgs
 }
 
 func parseResult(path string) (*scriptResult, error) {

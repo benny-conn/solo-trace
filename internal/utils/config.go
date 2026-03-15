@@ -25,9 +25,6 @@ func LoadConfig() {
 	viper.SetDefault("R2_BUCKET", "")
 	viper.SetDefault("R2_PUBLIC_BASE_URL", "")
 
-	// Audio fingerprint (optional — path to JSON built by build_fingerprint.py)
-	viper.SetDefault("FINGERPRINT_PATH", "")
-
 	// Nightly Smalls cron
 	viper.SetDefault("SMALLS_CRON_ENABLED", false)
 	viper.SetDefault("SMALLS_CRON_SCHEDULE", "CRON_TZ=America/New_York 0 0 5 * * *")

@@ -80,8 +80,8 @@ def detect_beats(audio_path: str) -> dict:
     """
     try:
         import madmom
-    except ImportError:
-        logger.warning("madmom not installed, skipping beat detection.")
+    except Exception:
+        logger.warning("madmom not available, skipping beat detection.")
         return {"bpm": None, "beat_times": []}
 
     logger.info("Running Madmom beat detection...")
@@ -129,16 +129,33 @@ def transcribe_pitch(audio_path: str, output_dir: str) -> dict:
         midi_path = str(out / (Path(audio_path).stem + ".mid"))
         midi_data.write(midi_path)
 
-        # Serialize note events to plain dicts
-        events = [
-            {
-                "start_time": float(n.start_time),
-                "end_time": float(n.end_time),
-                "pitch_midi": int(n.pitch),
-                "amplitude": float(n.amplitude),
-            }
-            for n in note_events
-        ]
+        # Serialize note events to plain dicts.
+        # basic-pitch API varies by version: older uses .start_time/.end_time/.pitch/.amplitude;
+        # newer uses namedtuple with .start_time_s/.end_time_s/.pitch_midi or plain tuples.
+        events = []
+        for n in note_events:
+            if hasattr(n, "start_time_s"):
+                events.append({
+                    "start_time": float(n.start_time_s),
+                    "end_time": float(n.end_time_s),
+                    "pitch_midi": int(n.pitch_midi),
+                    "amplitude": float(n.amplitude),
+                })
+            elif hasattr(n, "start_time"):
+                events.append({
+                    "start_time": float(n.start_time),
+                    "end_time": float(n.end_time),
+                    "pitch_midi": int(n.pitch),
+                    "amplitude": float(n.amplitude),
+                })
+            else:
+                # plain tuple: (start_s, end_s, pitch_midi, amplitude, ...)
+                events.append({
+                    "start_time": float(n[0]),
+                    "end_time": float(n[1]),
+                    "pitch_midi": int(n[2]),
+                    "amplitude": float(n[3]) if len(n) > 3 else 0.0,
+                })
 
         logger.info(f"Transcribed {len(events)} note events. MIDI: {midi_path}")
         return {"midi_path": midi_path, "note_events": events}
