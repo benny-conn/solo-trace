@@ -1,4 +1,4 @@
-module github.com/benny-conn/solo-grabber
+module github.com/benny-conn/solo-trace
 
 go 1.23
 

@@ -3,10 +3,10 @@ package main
 import (
 	"log"
 
-	"github.com/benny-conn/solo-grabber/internal/api"
-	sgcron "github.com/benny-conn/solo-grabber/internal/cron"
-	"github.com/benny-conn/solo-grabber/internal/store"
-	"github.com/benny-conn/solo-grabber/internal/utils"
+	"github.com/benny-conn/solo-trace/internal/api"
+	sgcron "github.com/benny-conn/solo-trace/internal/cron"
+	"github.com/benny-conn/solo-trace/internal/store"
+	"github.com/benny-conn/solo-trace/internal/utils"
 	"github.com/gin-gonic/gin"
 	"github.com/spf13/viper"
 )
@@ -31,7 +31,7 @@ func main() {
 	}
 
 	addr := utils.ServerAddr()
-	log.Printf("solo-grabber API listening on %s", addr)
+	log.Printf("solo-trace API listening on %s", addr)
 	if err := router.Run(addr); err != nil {
 		log.Fatalf("server error: %v", err)
 	}

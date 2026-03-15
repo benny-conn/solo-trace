@@ -1,4 +1,4 @@
--- solo-grabber SQLite schema
+-- solo-trace SQLite schema
 -- Reference file — SQLiteStore applies this on startup via db.Exec
 
 create table if not exists persons (

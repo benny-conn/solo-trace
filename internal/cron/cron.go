@@ -7,8 +7,8 @@ import (
 	"log"
 	"os/exec"
 
-	"github.com/benny-conn/solo-grabber/internal/runner"
-	"github.com/benny-conn/solo-grabber/internal/store"
+	"github.com/benny-conn/solo-trace/internal/runner"
+	"github.com/benny-conn/solo-trace/internal/store"
 	"github.com/robfig/cron/v3"
 	"github.com/segmentio/ksuid"
 	"github.com/spf13/viper"

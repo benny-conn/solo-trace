@@ -39,9 +39,11 @@ scripts/jam_history.json
 .kamal/
 
 # Go binary
-solo-grabber
+solo-trace
 
 # macOS
 .DS_Store
 
 SPEC.md
+
+.kamal

@@ -10,7 +10,7 @@ import (
 	"path/filepath"
 	"strings"
 
-	"github.com/benny-conn/solo-grabber/internal/store"
+	"github.com/benny-conn/solo-trace/internal/store"
 	"github.com/segmentio/ksuid"
 	"github.com/spf13/viper"
 )

@@ -5,7 +5,7 @@ COPY go.mod go.sum ./
 RUN go mod download
 
 COPY . .
-RUN CGO_ENABLED=0 GOOS=linux go build -o solo-grabber ./cmd/api/main.go
+RUN CGO_ENABLED=0 GOOS=linux go build -o solo-trace ./cmd/api/main.go
 
 # Use Debian slim — Alpine's musl libc breaks PyTorch/demucs/transformers wheels
 FROM python:3.11-slim-bullseye
@@ -16,7 +16,7 @@ RUN apt-get update && apt-get install -y --no-install-recommends \
 
 # Copy Go binary
 WORKDIR /app
-COPY --from=builder /app/solo-grabber .
+COPY --from=builder /app/solo-trace .
 
 # Copy Python scripts and install deps
 COPY scripts/ ./scripts/
@@ -32,4 +32,4 @@ ENV SERVER_PORT=4000
 ENV HF_HOME=/data/hf_cache
 EXPOSE 4000
 
-CMD ["./solo-grabber"]
+CMD ["./solo-trace"]

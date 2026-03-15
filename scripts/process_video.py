@@ -1,7 +1,7 @@
 """
 process_video.py
 
-Main entrypoint for the solo-grabber processing pipeline.
+Main entrypoint for the solo-trace processing pipeline.
 
 Usage:
   python process_video.py \\
@@ -309,7 +309,7 @@ def _save_result(result: dict, out_dir: Path) -> None:
 
 
 def main() -> None:
-    parser = argparse.ArgumentParser(description="solo-grabber video processing pipeline")
+    parser = argparse.ArgumentParser(description="solo-trace video processing pipeline")
 
     parser.add_argument("--video", required=True,
                         help="YouTube URL or local file path of the video to process")

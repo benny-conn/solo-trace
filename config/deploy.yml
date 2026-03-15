@@ -1,10 +1,10 @@
-service: solo-grabber
-image: bennyconn/solo-grabber
+service: solo-trace
+image: bennyconn/solo-trace
 
 servers:
   web:
     hosts:
-      - YOUR_MAC_MINI_LOCAL_IP   # e.g. 192.168.1.x — find with: ipconfig getifaddr en0
+      - 192.168.1.83
 
 registry:
   username: bennyconn
@@ -18,7 +18,7 @@ env:
   clear:
     ENVIRONMENT: production
     SERVER_PORT: 4000
-    DB_PATH: /data/solo-grabber.db
+    DB_PATH: /data/solo-trace.db
     JOBS_DIR: /data/jobs
     PYTHON_BIN: python3
     PYTHON_SCRIPT_PATH: /app/scripts/process_video.py
@@ -40,12 +40,12 @@ env:
 
 # Persist the SQLite database, job output, reference data, and HuggingFace model cache
 volumes:
-  - /data/solo-grabber:/data
+  - /data/solo-trace:/data
 
 proxy:
   app_port: 4000
   ssl: false
-  host: grabber.yourdomain.com
+  host: solo.bennyconn.com
   healthcheck:
     path: /health
     interval: 5
@@ -56,3 +56,6 @@ logging:
   options:
     max-size: "100m"
     max-file: "3"
+
+ssh:
+  user: benjaminconn

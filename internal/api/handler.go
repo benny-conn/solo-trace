@@ -3,7 +3,7 @@ package api
 import (
 	"net/http"
 
-	"github.com/benny-conn/solo-grabber/internal/store"
+	"github.com/benny-conn/solo-trace/internal/store"
 	"github.com/gin-gonic/gin"
 	"github.com/segmentio/ksuid"
 )

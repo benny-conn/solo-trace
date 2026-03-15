@@ -34,7 +34,7 @@ jobs/
 .env.local
 
 # Go build artifacts
-solo-grabber
+solo-trace
 
 # Deployment config
 .kamal/

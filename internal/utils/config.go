@@ -11,7 +11,7 @@ func LoadConfig() {
 	viper.SetDefault("SERVER_PORT", 4000)
 
 	// SQLite
-	viper.SetDefault("DB_PATH", "./solo-grabber.db")
+	viper.SetDefault("DB_PATH", "./solo-trace.db")
 
 	// Job runner
 	viper.SetDefault("JOBS_DIR", "./jobs")
