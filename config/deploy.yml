@@ -59,3 +59,5 @@ logging:
 
 ssh:
   user: benjaminconn
+  env:
+    PATH: /usr/local/bin:/usr/bin:/bin:/Applications/Docker.app/Contents/Resources/bin
