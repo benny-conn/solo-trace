@@ -1,7 +1,7 @@
 #!/bin/bash
 set -e
 
-MINI="benjaminconn@192.168.1.12"
+MINI="benjaminconn@192.168.1.83"
 REMOTE_DIR="/Users/benjaminconn/solo-trace"
 PLIST_LABEL="com.bennyconn.solo-trace"
 PLIST_PATH="$HOME/Library/LaunchAgents/$PLIST_LABEL.plist"
